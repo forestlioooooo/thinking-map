@@ -27,14 +27,11 @@ func BuildUnderstandingAgent(ctx context.Context) (r compose.Runnable[[]*schema.
 		return nil, err
 	}
 	utils.MakeAllFieldsRequired(understandingSchema.Value)
+	// NOTE: 使用 json_object 而非 json_schema，以兼容 DeepSeek 等不支持
+	// structured output 的 OpenAI 兼容 API。systemPrompt 中已包含详细的 JSON 格式说明。
+	_ = understandingSchema // schema 保留生成逻辑供参考，但 json_object 模式不使用
 	responseFormat := &openai.ChatCompletionResponseFormat{
-		Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
-		JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
-			Name:        "understanding",
-			Description: "问题理解&意图识别的json结果",
-			Strict:      true,
-			Schema:      understandingSchema.Value,
-		},
+		Type: openai.ChatCompletionResponseFormatTypeJSONObject,
 	}
 	cm, err := llmmodel.NewOpenAIModel(ctx, responseFormat)
 	if err != nil {
